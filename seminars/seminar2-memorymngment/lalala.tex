@@ -1,0 +1,19 @@
+\begin{tikzpicture}
+\begin{semilogxaxis}[
+    title={Growth in freelist with logarithmic x-axis},
+    xlabel={Number of allocations},
+    ylabel={Freelist length},
+    xmin=0, xmax=,
+    ymin=0, ymax=,
+    legend pos=north west,
+    ymajorgrids=true,
+    grid style=dashed,
+    width=\textwidth,
+]
+ 
+\addplot[
+    color=blue,
+    ]
+    table {no-merge.dat};
+\end{semilogxaxis}
+\end{tikzpicture}

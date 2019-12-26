@@ -18,7 +18,7 @@ typedef struct green_cond_t{
 
 typedef struct green_mutex_t{
   volatile int taken;
-  green_t *susp;
+  struct green_t *susp;
 }green_mutex_t;
 
 

@@ -109,17 +109,19 @@ void green_thread() {
     // save result of execution
     this->retval = result;
 
+    free(this->context->uc_stack.ss_sp);
+    free(this->context);
+
     // we're a zombie
     this->zombie = TRUE;
 
     // find the next thread to run
     green_t *next = dequeue();
-
     running = next;
-    sigprocmask(SIG_UNBLOCK,&block,NULL);
-    
+
     setcontext(next->context);
     
+    sigprocmask(SIG_UNBLOCK,&block,NULL);
 }
 
 int green_create(green_t *new, void *(*fun)(void*), void *arg) {  
@@ -175,12 +177,14 @@ int green_join(green_t *thread, void **res) {
     running = next;
     swapcontext(susp->context, next->context);
 
-    sigprocmask(SIG_UNBLOCK,&block,NULL);
 
     // free context
     free(thread->context->uc_stack.ss_sp);
     free(thread->context);
     thread->context = NULL;
+
+    sigprocmask(SIG_UNBLOCK,&block,NULL);
+
   return 0; 
 }
 #pragma endregion green
@@ -192,7 +196,7 @@ void green_cond_init(green_cond_t *thread){
 }
 
 void green_cond_wait(green_cond_t *thread){
-
+    sigprocmask(SIG_BLOCK,&block,NULL);
     // Suspend and queue it again
     green_t *susp = running;
 
@@ -208,6 +212,7 @@ void green_cond_wait(green_cond_t *thread){
     
     running = next;
     swapcontext(susp->context,next->context);
+    sigprocmask(SIG_UNBLOCK,&block,NULL);
 }
 
 void green_cond_wait_mutex(green_cond_t *cond, green_mutex_t *mutex) {
@@ -224,12 +229,11 @@ void green_cond_wait_mutex(green_cond_t *cond, green_mutex_t *mutex) {
         cond->last = susp;
     }
 
-
     if(mutex != NULL) {
-    // release the lock if we have a mutex
+        // release the lock if we have a mutex
         mutex->taken = FALSE;
-    // move suspended thread to ready queue
-        enqueue(mutex->susp);
+        // move suspended thread to ready queue
+        green_mutex_unlock(mutex);
     }
     // schedule the next thread
     green_t *next = dequeue();
